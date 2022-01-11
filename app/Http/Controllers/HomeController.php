@@ -93,7 +93,8 @@ class HomeController extends Controller
             $images = new Image();
             $images->name = $result['url'];
             $images->save();
-
+            //Remove image local
+            unlink($path_upload);
             return redirect('/create')->with('success', 'Upload image successful');
         } catch (\Throwable $th) {
             Log::error('error: Can not upload image now!'. $th->getMessage());
@@ -107,7 +108,7 @@ class HomeController extends Controller
         $cheaders = array(
             'Authorization: Bearer ' . $authorization,
             'Content-Type: application/octet-stream',
-            'Dropbox-API-Arg: {"path":"/test/' . $file_name . '", "mode":"add","autorename": true,"mute": false,"strict_conflict": false}'
+            'Dropbox-API-Arg: {"path":"/images/' . $file_name . '", "mode":"add","autorename": true,"mute": false,"strict_conflict": false}'
         );
         $ch = curl_init('https://content.dropboxapi.com/2/files/upload');
         curl_setopt($ch, CURLOPT_HTTPHEADER, $cheaders);
@@ -125,7 +126,7 @@ class HomeController extends Controller
             'Authorization' => 'Bearer '.$authorization,
             'Content-Type' => 'application/json',
         ])->post('https://api.dropboxapi.com/2/sharing/create_shared_link', [
-            "path" => "/test/" . $file_name,
+            "path" => "/images/" . $file_name,
             'short_url' => false,
         ]);
         if($response->getStatusCode() != '200'){
