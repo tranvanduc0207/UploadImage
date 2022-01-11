@@ -55,7 +55,8 @@ class HomeController extends Controller
             $author_code = $request->input('author_code');
             //Get image 
             $img = $request->file('images');
-            $path = 'file_storage/';
+            $path = public_path('aaa');
+            
             $originName = $img->getClientOriginalName($img);
             if (FALSE === \File::exists($path)) {
                 if (TRUE !== \File::makeDirectory($path)) {
@@ -65,7 +66,7 @@ class HomeController extends Controller
             }
             $file_name = strtotime(date('Y-m-d H:i:s')) . $originName;
             $img->move($path, $file_name);
-            $path_upload = $path . $file_name;
+            $path_upload = $path . '/'. $file_name;
             //Get access token
             $user = User::find(Auth::id());
             
@@ -85,9 +86,9 @@ class HomeController extends Controller
             }
            
             // Upload image to Dropbox
-            $this->uploadImage($path_upload, $authorization);
+            $this->uploadImage($path_upload, $authorization, $file_name);
             // Get link image just uploaded
-            $result = $this->insertImageLink($path_upload, $authorization);
+            $result = $this->insertImageLink($path_upload, $authorization, $file_name);
             // Insert link to DB
             $images = new Image();
             $images->name = $result['url'];
@@ -100,13 +101,13 @@ class HomeController extends Controller
         }
     }
 
-    public function uploadImage($path_upload, $authorization)
+    public function uploadImage($path_upload, $authorization, $file_name)
     {
         $fp = fopen($path_upload, 'rb');
         $cheaders = array(
             'Authorization: Bearer ' . $authorization,
             'Content-Type: application/octet-stream',
-            'Dropbox-API-Arg: {"path":"/test/' . $path_upload . '", "mode":"add","autorename": true,"mute": false,"strict_conflict": false}'
+            'Dropbox-API-Arg: {"path":"/test/' . $file_name . '", "mode":"add","autorename": true,"mute": false,"strict_conflict": false}'
         );
         $ch = curl_init('https://content.dropboxapi.com/2/files/upload');
         curl_setopt($ch, CURLOPT_HTTPHEADER, $cheaders);
@@ -118,13 +119,13 @@ class HomeController extends Controller
         $response = curl_exec($ch);
         return $response;
     }
-    public function insertImageLink($path_upload, $authorization)
+    public function insertImageLink($path_upload, $authorization, $file_name)
     {
         $response = Http::withHeaders([
             'Authorization' => 'Bearer '.$authorization,
             'Content-Type' => 'application/json',
         ])->post('https://api.dropboxapi.com/2/sharing/create_shared_link', [
-            "path" => "/test/" . $path_upload,
+            "path" => "/test/" . $file_name,
             'short_url' => false,
         ]);
         if($response->getStatusCode() != '200'){
